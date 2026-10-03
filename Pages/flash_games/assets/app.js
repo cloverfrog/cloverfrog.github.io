@@ -1,4 +1,4 @@
-var GAME_BASE = (window.FLASH_GAMES_CONFIG || {}).gameBase;
+var GAME_BASE = new URL(window.FLASH_GAMES_CONFIG.gameBase, window.location.href).href.replace(/\/?$/, "/");
 
 var state = { games: [], tags: [], filter: "all", query: "" };
 
