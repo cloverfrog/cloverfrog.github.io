@@ -87,7 +87,7 @@ function renderGames() {
 }
 
 async function initIndex() {
-  var resp = await fetch("data/games.json");
+  var resp = await fetch(GAME_BASE + "games.json");
   if (!resp.ok) throw new Error("游戏清单请求失败");
   state.games = await resp.json();
   var tagSet = new Set();
@@ -105,7 +105,7 @@ async function initIndex() {
 
 async function initPlay() {
   var gid = new URLSearchParams(window.location.search).get("id");
-  var resp = await fetch("data/games.json");
+  var resp = await fetch(GAME_BASE + "games.json");
   if (!resp.ok) throw new Error("游戏清单请求失败");
   var games = await resp.json();
   var game = games.find(function (g) { return g.id === gid; });
