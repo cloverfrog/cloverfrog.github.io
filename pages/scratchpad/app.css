@@ -1,0 +1,35 @@
+:root { color-scheme: light; font-family: system-ui, -apple-system, "Microsoft YaHei", sans-serif; color: #222; background: #fff; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 1100px; margin: auto; padding: 18px 24px; }
+header, .toolbar, footer { display: flex; align-items: center; gap: 12px; }
+header { margin-bottom: 16px; } h1 { font-size: 22px; flex: 1; margin: 0; }
+a { color: #2459a6; text-underline-offset: 4px; }
+button, input, textarea { font: inherit; }
+button { border: 1px solid #ccd3db; background: #f6f8fa; color: #222; padding: 8px 12px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+button:hover { background: #eaf0f7; } button[aria-current="true"] { color: #2459a6; border-color: #2459a6; background: #eaf0f7; }
+button:disabled { opacity: .5; cursor: default; }
+:focus-visible { outline: 2px solid #2459a6; outline-offset: 2px; }
+label { display: block; } input, textarea { width: 100%; border: 1px solid #ccd3db; border-radius: 6px; padding: 10px; background: #fff; color: #222; }
+#login { max-width: 420px; } #login label { margin: 12px 0; }
+#notice { min-height: 1.5em; color: #805719; margin: 10px 0; overflow-wrap: anywhere; }
+#drafts { display: flex; overflow-x: auto; gap: 8px; flex: 1; padding: 4px; }
+#drafts button { max-width: 230px; overflow: hidden; text-overflow: ellipsis; }
+.title-label { margin: 16px 0 8px; font-size: 13px; color: #667; }
+.content-label { font-size: 13px; color: #667; }
+#title { font-size: 18px; color: #222; }
+textarea { display: block; min-height: 50dvh; resize: vertical; line-height: 1.65; font-family: ui-monospace, Consolas, "Microsoft YaHei", monospace; tab-size: 4; }
+footer { margin: 12px 0; flex-wrap: wrap; } #status { flex: 1; min-width: 160px; font-size: 14px; color: #526071; }
+#undo p { padding: 8px; background: #f5f1e8; border-radius: 6px; } #undo button { margin-left: 10px; }
+small { color: #667; } [hidden] { display: none !important; }
+#file-panel { margin-top: 32px; padding-top: 20px; border-top: 1px solid #dce1e7; }
+#file-panel h2 { font-size: 18px; flex: 1; margin: 0; }
+#file-panel p { font-size: 14px; color: #526071; }
+.file-upload-row { display: flex; align-items: end; gap: 12px; }
+.file-upload-row label { flex: 1; min-width: 0; font-size: 13px; }
+input[type="file"] { max-width: 100%; }
+#file-list { list-style: none; padding: 0; }
+#file-list li { display: flex; align-items: center; gap: 8px; padding: 12px 0; border-bottom: 1px solid #edf0f3; }
+.file-info { flex: 1; min-width: 0; } .file-name { display: block; overflow-wrap: anywhere; }
+.file-info small { display: block; font-size: 12px; }
+@media (max-width: 600px) { main { padding: 12px; } header { gap: 8px; } h1 { font-size: 19px; } textarea { min-height: 52dvh; } button { padding: 8px 10px; } }

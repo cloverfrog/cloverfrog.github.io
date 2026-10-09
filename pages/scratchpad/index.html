@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' https://pocketbase.cloverfrog.xyz; script-src 'self'; style-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <title>Scratchpad · cloverfrog</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <main>
+    <header><a href="../../">← cloverfrog</a><h1>Scratchpad</h1><button id="logout" hidden>退出</button></header>
+    <form id="login">
+      <p>使用普通账号登录。点击保存或按 Ctrl / Cmd + S 保存到云端。</p>
+      <label>邮箱<input id="email" type="email" autocomplete="username" required></label>
+      <label>密码<input id="password" type="password" autocomplete="current-password" required></label>
+      <button type="submit">登录</button>
+    </form>
+    <p id="notice" role="status" aria-live="polite"></p>
+    <section id="workspace" hidden>
+      <div class="toolbar"><nav id="drafts" aria-label="草稿列表"></nav><button id="refresh">刷新列表</button><button id="new">＋ 新建</button></div>
+      <p id="empty">没有草稿。点击“新建”开始。</p>
+      <section id="editor" hidden>
+        <label class="title-label">标题<input id="title" maxlength="500" placeholder="未命名草稿" autocomplete="off"></label>
+        <label class="content-label">正文<textarea id="content" spellcheck="false" placeholder="在这里整理提示词、Markdown 或代码…"></textarea></label>
+        <footer><span id="status" role="status"></span><button id="save">保存</button><button id="copy">复制全文</button><button id="complete">完成</button></footer>
+      </section>
+      <div id="undo" aria-live="polite"></div>
+      <small>Ctrl / Cmd + S 保存，Ctrl / Cmd + Enter 复制全文。未保存修改以 * 标记。登录或刷新时自动清理最后保存已满 3 天的草稿；正在编辑的修改暂保留。</small>
+    </section>
+    <section id="file-panel" hidden aria-labelledby="file-heading">
+      <div class="toolbar"><h2 id="file-heading">文件速传</h2><button id="file-refresh">刷新文件</button></div>
+      <p>同一账号跨设备上传、下载。单个文件最多 50 MB；登录、刷新或上传时自动清理上传已满 3 天的文件。</p>
+      <div class="file-upload-row"><label for="file-input">选择文件<input id="file-input" type="file" multiple></label><button id="file-upload">上传</button><button id="file-cancel" hidden>取消上传</button></div>
+      <p id="file-status" role="status" aria-live="polite"></p>
+      <ul id="file-list" aria-label="已上传文件"></ul>
+    </section>
+  </main>
+  <script type="module" src="app.mjs"></script>
+</body>
+</html>

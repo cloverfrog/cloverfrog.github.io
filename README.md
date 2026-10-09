@@ -34,7 +34,9 @@ Caddy 将 `/resources/*` 映射到该目录，因此页面代码统一使用 `/r
 
 ## 部署
 
-主站源码部署于：
+主站为 `cloverfrog.xyz`
+
+源码部署于：
 
 ```text
 /srv/web
