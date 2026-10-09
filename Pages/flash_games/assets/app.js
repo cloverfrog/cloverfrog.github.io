@@ -127,5 +127,5 @@ async function initPlay() {
   loadPlayer();
 }
 
-if (document.body.dataset.page === "index") initIndex().catch(function () { setStatus($("#backup-status"), "游戏清单加载失败。", true); });
-if (document.body.dataset.page === "play") initPlay().catch(function () { $("#play-title").textContent = "页面加载失败"; });
+if (document.body.dataset.page === "index") initIndex().catch(function (e) { console.error("Error in initIndex:", e); setStatus($("#backup-status"), "游戏清单加载失败。", true); });
+if (document.body.dataset.page === "play") initPlay().catch(function (e) { console.error("Error in initPlay:", e); $("#play-title").textContent = "页面加载失败"; });
