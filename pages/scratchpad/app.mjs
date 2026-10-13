@@ -4,6 +4,41 @@ import { FileTransfer } from './files.mjs';
 import { pruneCache, cleanExpired } from './retention.mjs';
 
 const $ = id => document.getElementById(id);
+// Display preferences are local to this browser and independent of draft state.
+const displayKey = 'scratchpad-display';
+const display = { size: 16, font: 'mono', lineHeight: 1.65, wrap: true };
+try {
+  const saved = JSON.parse(localStorage.getItem(displayKey));
+  if ([12, 14, 16, 18, 20, 22, 24].includes(saved?.size)) display.size = saved.size;
+  if (['mono', 'system'].includes(saved?.font)) display.font = saved.font;
+  if ([1.5, 1.65, 1.8].includes(saved?.lineHeight)) display.lineHeight = saved.lineHeight;
+  if (typeof saved?.wrap === 'boolean') display.wrap = saved.wrap;
+} catch { /* Keep defaults when storage is unavailable or invalid. */ }
+function applyDisplay(persist = false) {
+  const editor = $('content');
+  editor.style.setProperty('--editor-size', `${display.size}px`);
+  editor.style.setProperty('--editor-line-height', display.lineHeight);
+  editor.style.setProperty('--editor-font', display.font === 'system'
+    ? 'system-ui, -apple-system, "Microsoft YaHei", sans-serif'
+    : 'ui-monospace, Consolas, "Microsoft YaHei", monospace');
+  editor.wrap = display.wrap ? 'soft' : 'off';
+  $('font-size').textContent = `${display.size}px`;
+  $('font-smaller').disabled = display.size === 12;
+  $('font-larger').disabled = display.size === 24;
+  $('font-family').value = display.font;
+  $('line-height').value = String(display.lineHeight);
+  $('word-wrap').checked = display.wrap;
+  if (persist) {
+    try { localStorage.setItem(displayKey, JSON.stringify(display)); } catch { /* Still apply for this page. */ }
+  }
+}
+for (const [id, step] of [['font-smaller', -2], ['font-larger', 2]]) {
+  $(id).onclick = () => { display.size = Math.max(12, Math.min(24, display.size + step)); applyDisplay(true); };
+}
+$('font-family').onchange = e => { display.font = e.target.value; applyDisplay(true); };
+$('line-height').onchange = e => { display.lineHeight = Number(e.target.value); applyDisplay(true); };
+$('word-wrap').onchange = e => { display.wrap = e.target.checked; applyDisplay(true); };
+applyDisplay();
 const store = new Store();
 const authKey = 'scratchpad-auth';
 let session, busy = false, composing = false;

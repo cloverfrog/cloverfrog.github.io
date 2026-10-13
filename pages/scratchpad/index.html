@@ -25,7 +25,21 @@
       <p id="empty">没有草稿。点击“新建”开始。</p>
       <section id="editor" hidden>
         <label class="title-label">标题<input id="title" maxlength="500" placeholder="未命名草稿" autocomplete="off"></label>
-        <label class="content-label">正文<textarea id="content" spellcheck="false" placeholder="在这里整理提示词、Markdown 或代码…"></textarea></label>
+        <div class="display-toolbar" role="group" aria-label="正文显示设置">
+          <label class="content-label" for="content">正文</label>
+          <button id="font-smaller" type="button" aria-label="减小正文字号">A−</button>
+          <output id="font-size" aria-live="polite">16px</output>
+          <button id="font-larger" type="button" aria-label="增大正文字号">A+</button>
+          <details class="display-settings">
+            <summary>显示设置</summary>
+            <div class="display-options">
+              <label>字体<select id="font-family"><option value="mono">等宽字体</option><option value="system">系统字体</option></select></label>
+              <label>行高<select id="line-height"><option value="1.65">默认 · 1.65</option><option value="1.5">普通 · 1.5</option><option value="1.8">宽松 · 1.8</option></select></label>
+              <label class="wrap-option"><input id="word-wrap" type="checkbox" checked>自动换行</label>
+            </div>
+          </details>
+        </div>
+        <textarea id="content" spellcheck="false" placeholder="在这里整理提示词、Markdown 或代码…"></textarea>
         <footer><span id="status" role="status"></span><button id="save">保存</button><button id="copy">复制全文</button><button id="complete">完成</button></footer>
       </section>
       <div id="undo" aria-live="polite"></div>
