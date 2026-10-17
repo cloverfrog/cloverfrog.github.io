@@ -1,4 +1,4 @@
-import { API_URL } from './config.js';
+import { API_URL } from '/config.js';
 import { cleanExpired } from './retention.mjs';
 
 export const MAX_FILE_SIZE = 50 * 1024 * 1024;
@@ -28,7 +28,7 @@ export class FileTransfer {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), binary ? 300000 : 15000);
     try {
-      const response = await fetch(API_URL + path, { method, headers: { Authorization: this.auth.token },
+      const response = await fetch(API_URL + '/api/scratchpad' + path.slice(4), { method, credentials: 'same-origin',
         body, cache: 'no-store', referrerPolicy: 'no-referrer', signal: controller.signal });
       if (!response.ok) throw Object.assign(new Error('File request failed'), { status: response.status });
       if (response.status === 204) return null;
@@ -46,8 +46,7 @@ export class FileTransfer {
   uploadFile(body, file, index, count) {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest(); this.uploadRequest = xhr;
-      xhr.open('POST', API_URL + '/api/collections/scratchpad_files/records');
-      xhr.setRequestHeader('Authorization', this.auth.token);
+      xhr.open('POST', API_URL + '/api/scratchpad/collections/scratchpad_files/records');
       xhr.timeout = 300000;
       const prefix = `正在上传 ${index}/${count}：${file.name}`;
       xhr.upload.onprogress = e => {
@@ -137,9 +136,7 @@ export class FileTransfer {
     if (!this.auth || this.busy) return;
     this.setBusy(true); this.message('正在准备下载…');
     try {
-      const { token } = await this.request('/api/files/token', { method: 'POST' });
-      // Only a short-lived file token enters the URL; never the login token.
-      const path = `/api/files/scratchpad_files/${encodeURIComponent(item.id)}/${encodeURIComponent(item.file)}?token=${encodeURIComponent(token)}&download=1`;
+      const path = `/api/files/${encodeURIComponent(item.id)}`;
       const blob = await this.request(path, { binary: true });
       const url = URL.createObjectURL(blob), link = document.createElement('a');
       link.href = url; link.download = item.originalName || item.file; link.rel = 'noreferrer';

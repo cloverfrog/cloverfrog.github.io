@@ -11,7 +11,6 @@ button:hover { background: var(--button-hover); } button[aria-current="true"] { 
 button:disabled { opacity: .5; cursor: default; }
 :focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
 label { display: block; } input, textarea { width: 100%; border: 1px solid var(--border); border-radius: 6px; padding: 10px; background: var(--background); color: var(--text); }
-#login { max-width: 420px; } #login label { margin: 12px 0; }
 #notice { min-height: 1.5em; color: var(--notice); margin: 10px 0; overflow-wrap: anywhere; }
 #drafts { display: flex; overflow-x: auto; gap: 8px; flex: 1; padding: 4px; }
 #drafts button { max-width: 230px; overflow: hidden; text-overflow: ellipsis; }

@@ -1,4 +1,5 @@
-import { API_URL } from './config.js';
+import { API_URL } from '/config.js';
+import { requireUser, goToLogin, authRequest } from '/assets/auth.mjs';
 import { Store } from './store.mjs';
 import { FileTransfer } from './files.mjs';
 import { pruneCache, cleanExpired } from './retention.mjs';
@@ -40,7 +41,6 @@ $('line-height').onchange = e => { display.lineHeight = Number(e.target.value); 
 $('word-wrap').onchange = e => { display.wrap = e.target.checked; applyDisplay(true); };
 applyDisplay();
 const store = new Store();
-const authKey = 'scratchpad-auth';
 let session, busy = false, composing = false;
 const files = new FileTransfer(() => { $('logout').disabled = busy || files.busy; }, error => { notice(errorMessage(error)); });
 const notice = text => { $('notice').textContent = text; };
@@ -51,12 +51,12 @@ const draft = r => ({ localId: r.id || crypto.randomUUID(), id: r.id || null,
   createId: r.id || recordId(), title: r.title || '', content: r.content || '', seq: 0, dirty: !r.id,
   localSavedAt: Date.now() });
 
-async function request(path, method = 'GET', body, token = session?.auth.token) {
+async function request(path, method = 'GET', body) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 15000);
   try {
-    const response = await fetch(API_URL + path, { method, headers: {
-      ...(token ? { Authorization: token } : {}), ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    const response = await fetch(API_URL + '/api/scratchpad' + path.slice(4), { method, credentials: 'same-origin', headers: {
+      ...(body ? { 'Content-Type': 'application/json' } : {}) },
       ...(body ? { body: JSON.stringify(body) } : {}), signal: controller.signal, cache: 'no-store' });
     const data = response.status === 204 ? null : await response.json();
     if (!response.ok) throw Object.assign(new Error(data?.message || '请求失败'), { status: response.status });
@@ -65,8 +65,8 @@ async function request(path, method = 'GET', body, token = session?.auth.token) 
 }
 function errorMessage(error) {
   if (error.status === 401) {
-    $('login').hidden = false;
-    return '登录已过期，请使用同一账号重新登录。当前文本仍保留。';
+    goToLogin();
+    return '登录已过期，正在前往登录页。未保存内容请先复制保留。';
   }
   if (error.status === 403) return 'PocketBase 权限未配置（403），请按说明设置 scratchpads 的 API Rules。无需反复登录。';
   if (error.status === 404) return '集合或草稿不存在，或当前账号无权访问（404）。当前文本仍保留。';
@@ -166,18 +166,8 @@ async function start(auth) {
     dirty: !!(r.dirty || r.op || r.pending), pending: false, seq: r.seq || 0, localSavedAt: r.localSavedAt })),
     selected: sameUser ? previous.selected : cached.selected };
   for (const d of session.drafts) d.pending = false;
-  $('login').hidden = true; render(); files.setSession(auth); await refresh();
+  render(); files.setSession(auth); await refresh();
 }
-$('login').onsubmit = async e => {
-  e.preventDefault(); if (busy || files.busy) return;
-  const button = $('login').querySelector('button'); button.disabled = true;
-  try {
-    const auth = await request('/api/collections/users/auth-with-password', 'POST', { identity: $('email').value, password: $('password').value }, '');
-    if (session && session.auth.record.id !== auth.record.id && hasChanges() && !confirm('当前账号有未保存修改，切换账号将放弃这些修改。继续？')) return;
-    localStorage.setItem(authKey, JSON.stringify(auth)); $('password').value = ''; await start(auth);
-  } catch (error) { notice('登录失败，请检查账号、密码与网络。'); }
-  finally { button.disabled = false; }
-};
 $('new').onclick = () => {
   if (!session || busy) return; const d = draft({});
   session.drafts.push(d); session.selected = d.localId; render(); $('content').focus();
@@ -224,14 +214,23 @@ $('complete').onclick = () => {
     finally { d.deleting = false; busy = false; render(); }
   }, 8000);
 };
-$('logout').onclick = () => {
+$('logout').onclick = async () => {
   if (busy || files.busy || (hasChanges() && !confirm('仍有未保存修改，退出将放弃这些修改。继续？'))) return;
-  for (const d of session.drafts) clearTimeout(d.timer);
-  session = null; files.setSession(null); localStorage.removeItem(authKey); $('login').hidden = false; render(); notice('已退出。');
+  $('logout').disabled = true;
+  try {
+    await authRequest('logout');
+    for (const d of session.drafts) { clearTimeout(d.timer); d.dirty = false; d.pending = false; }
+    session = null; files.setSession(null); render(); goToLogin();
+  } catch { notice('退出失败，请稍后重试。'); }
+  finally { $('logout').disabled = false; }
 };
 window.addEventListener('beforeunload', e => { if (hasChanges() || files.busy) { e.preventDefault(); e.returnValue = ''; } });
+render();
 try {
-  await store.open();
-  let cached; try { cached = JSON.parse(localStorage.getItem(authKey) || 'null'); } catch { localStorage.removeItem(authKey); }
-  if (cached?.record?.id && cached.record.collectionName === 'users') await start(cached);
-} catch { notice('无法读取本机旧草稿，请检查浏览器存储设置。'); }
+  const user = await requireUser();
+  if (user) {
+    await store.open();
+    try { localStorage.removeItem('scratchpad-auth'); } catch { /* Obsolete token only. */ }
+    await start({ record: user });
+  }
+} catch { notice('无法连接登录服务或读取本机草稿，请稍后刷新重试。'); }
