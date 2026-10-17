@@ -1,5 +1,5 @@
 import { API_URL } from '/config.js';
-import { requireUser, goToLogin, authRequest } from '/assets/auth.mjs';
+import { requireUser, goToLogin } from '/assets/auth.mjs';
 import { Store } from './store.mjs';
 import { FileTransfer } from './files.mjs';
 import { pruneCache, cleanExpired } from './retention.mjs';
@@ -42,7 +42,7 @@ $('word-wrap').onchange = e => { display.wrap = e.target.checked; applyDisplay(t
 applyDisplay();
 const store = new Store();
 let session, busy = false, composing = false;
-const files = new FileTransfer(() => { $('logout').disabled = busy || files.busy; }, error => { notice(errorMessage(error)); });
+const files = new FileTransfer(undefined, error => { notice(errorMessage(error)); });
 const notice = text => { $('notice').textContent = text; };
 const selected = () => session?.drafts.find(d => d.localId === session.selected && !d.pending);
 const hasChanges = () => session?.drafts.some(d => d.dirty || d.pending);
@@ -75,7 +75,7 @@ function errorMessage(error) {
 }
 function render(text = true) {
   const d = selected();
-  $('workspace').hidden = !session; $('logout').hidden = !session;
+  $('workspace').hidden = !session;
   $('editor').hidden = !d; $('empty').hidden = !!d;
   $('drafts').replaceChildren(...(session?.drafts || []).filter(x => !x.pending).map(x => {
     const b = document.createElement('button'); b.textContent = (x.title || '未命名草稿') + (x.dirty ? ' *' : '');
@@ -83,8 +83,7 @@ function render(text = true) {
     b.onclick = () => { session.selected = x.localId; render(); }; return b;
   }));
   if (text) { $('title').value = d?.title || ''; $('content').value = d?.content || ''; }
-  for (const id of ['save', 'new', 'refresh', 'complete', 'logout']) $(id).disabled = busy;
-  $('logout').disabled = busy || files.busy;
+  for (const id of ['save', 'new', 'refresh', 'complete']) $(id).disabled = busy;
   $('status').textContent = busy ? '处理中…' : d?.dirty ? '未保存' : d ? '已保存' : '';
   $('undo').replaceChildren(...(session?.drafts || []).filter(x => x.pending).map(x => {
     const p = document.createElement('p'); p.textContent = `待完成：${x.title || '未命名草稿'}`;
@@ -213,16 +212,6 @@ $('complete').onclick = () => {
     } catch (error) { d.pending = false; s.selected = d.localId; notice(errorMessage(error)); }
     finally { d.deleting = false; busy = false; render(); }
   }, 8000);
-};
-$('logout').onclick = async () => {
-  if (busy || files.busy || (hasChanges() && !confirm('仍有未保存修改，退出将放弃这些修改。继续？'))) return;
-  $('logout').disabled = true;
-  try {
-    await authRequest('logout');
-    for (const d of session.drafts) { clearTimeout(d.timer); d.dirty = false; d.pending = false; }
-    session = null; files.setSession(null); render(); goToLogin();
-  } catch { notice('退出失败，请稍后重试。'); }
-  finally { $('logout').disabled = false; }
 };
 window.addEventListener('beforeunload', e => { if (hasChanges() || files.busy) { e.preventDefault(); e.returnValue = ''; } });
 render();

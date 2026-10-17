@@ -1,15 +1,13 @@
 import { API_URL } from '/config.js';
-import { requireUser, goToLogin, logout as siteLogout } from '/assets/auth.mjs';
+import { requireUser, goToLogin } from '/assets/auth.mjs';
 
 const video = document.querySelector('#video');
 const status = document.querySelector('#status');
-const logout = document.querySelector('#logout');
 let authenticated = false;
 // Remove obsolete direct-source settings from earlier local previews.
 try { localStorage.removeItem('tinytv.settings'); } catch {}
 function setAuthenticated(value) {
   authenticated = value;
-  logout.hidden = !value;
   document.querySelector('#enter').disabled = !value;
   if (!value) {
     started = false; current = null; pending = null;
@@ -108,12 +106,6 @@ document.addEventListener('fullscreenchange', () => {
   fullscreen.textContent = document.fullscreenElement ? '退出全屏' : '全屏';
   revealControls();
 });
-logout.onclick = async () => {
-  logout.disabled = true;
-  try { await siteLogout(); setAuthenticated(false); }
-  catch { status.textContent = '退出失败，请重试。'; }
-  finally { logout.disabled = false; }
-};
 document.addEventListener('visibilitychange', () => { if (!document.hidden) sync(); });
 setInterval(sync, 15000);
 setAuthenticated(false);
