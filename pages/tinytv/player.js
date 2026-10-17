@@ -29,7 +29,7 @@ function applyPosition() {
     status.textContent = '视频已结束，等待节目时间线切换；请核对节目时长。';
     return;
   }
-  if (Math.abs(video.currentTime - target) > 3) video.currentTime = target;
+  if (Math.abs(video.currentTime - target) > 30) video.currentTime = target;
   pending = null;
   if (started && video.paused) video.play().catch(() => { status.textContent = '请点击进入频道以开始播放。'; });
 }
