@@ -30,8 +30,8 @@ cloverfrog 的个人网站源码。首页和各页面模块使用静态 HTML、C
 
 2. 在后端项目根目录启动 API：
 
-   ```bash
-   uvicorn main:app --host 127.0.0.1 --port 8765 --reload
+   ```powershell
+   .\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8765 --reload
    ```
 
 3. 安装 Caddy 后，在本网站项目根目录启动：

@@ -3,12 +3,38 @@ import { requireUser, goToLogin } from '/assets/auth.mjs';
 
 const video = document.querySelector('#video');
 const status = document.querySelector('#status');
+const player = document.querySelector('#player');
+const enter = document.querySelector('#enter');
+const entry = document.querySelector('.entry');
+const enterLabel = document.querySelector('#enter-label');
+const fullscreen = document.querySelector('#fullscreen');
+let hideControls, needsAttention = false, playbackIssue = '';
+function setStatus(message, attention = false) {
+  status.textContent = message;
+  needsAttention = attention;
+  if (attention) revealControls();
+}
+function offerEntry(message) {
+  playbackIssue = message;
+  entry.hidden = false;
+  enterLabel.textContent = '重新进入';
+  setStatus(message, true);
+}
+function playChannel() {
+  video.play().catch(error => {
+    // Loading the next program can cancel an earlier play request.
+    if (error.name === 'AbortError') return;
+    if (!authenticated || !started) return;
+    started = false;
+    offerEntry('播放未能开始，请点击重新进入频道。');
+  });
+}
 let authenticated = false;
 // Remove obsolete direct-source settings from earlier local previews.
 try { localStorage.removeItem('tinytv.settings'); } catch {}
 function setAuthenticated(value) {
   authenticated = value;
-  document.querySelector('#enter').disabled = !value;
+  enter.disabled = !value;
   if (!value) {
     started = false; current = null; pending = null;
     clearTimeout(boundary);
@@ -16,7 +42,10 @@ function setAuthenticated(value) {
     document.querySelector('#current').textContent = '登录后进入频道';
     document.querySelector('#next').textContent = '';
     document.querySelector('#programs').replaceChildren();
-    status.textContent = '使用 PocketBase 账号登录';
+    entry.hidden = false;
+    playbackIssue = '';
+    enterLabel.textContent = '进入频道';
+    setStatus('使用 PocketBase 账号登录', true);
   }
 }
 let busy = false, current = null, boundary = null, pending = null, started = false;
@@ -26,12 +55,12 @@ function applyPosition() {
   if (!pending || video.readyState < 1) return;
   const target = pending.offset + (performance.now() - pending.received) / 1000;
   if (Number.isFinite(video.duration) && target >= video.duration) {
-    status.textContent = '视频已结束，等待节目时间线切换；请核对节目时长。';
+    setStatus('视频已结束，等待节目时间线切换；请核对节目时长。', true);
     return;
   }
   if (Math.abs(video.currentTime - target) > 30) video.currentTime = target;
   pending = null;
-  if (started && video.paused) video.play().catch(() => { status.textContent = '请点击进入频道以开始播放。'; });
+  if (started && video.paused) playChannel();
 }
 async function sync() {
   if (busy || !authenticated) return;
@@ -47,7 +76,7 @@ async function sync() {
     clearTimeout(boundary);
     if (data.status === 'waiting') {
       video.pause(); current = null; pending = null;
-      status.textContent = `频道将于 ${new Date(data.startTime * 1000).toLocaleString()} 开播`;
+      setStatus(`频道将于 ${new Date(data.startTime * 1000).toLocaleString()} 开播`, true);
       boundary = setTimeout(sync, Math.min(30000, Math.max(100, (data.startTime-data.serverTime)*1000)));
       return;
     }
@@ -66,28 +95,48 @@ async function sync() {
       li.classList.toggle('active', p.title === data.title && p.season === data.season && p.episode === data.episode);
       return li;
     }));
-    status.textContent = started ? '已同步频道时间' : '频道已就绪，点击进入频道';
+    if (playbackIssue) setStatus(playbackIssue, true);
+    else setStatus(started ? (video.readyState < 3 ? '正在缓冲…' : '正在直播 · 已同步频道时间') : '频道已就绪，点击进入频道', started && video.readyState < 3);
     applyPosition();
     boundary = setTimeout(sync, Math.max(100, (data.remaining-delay)*1000+50));
   } catch (error) {
-    status.textContent = `同步失败：${error.message}。稍后自动重试。`;
+    setStatus(`同步失败：${error.message}。稍后自动重试。`, true);
   } finally { busy = false; }
 }
 video.addEventListener('loadedmetadata', applyPosition);
 video.addEventListener('ended', sync);
 video.addEventListener('play', () => { started = true; sync(); });
-video.addEventListener('error', () => { if (authenticated) { current = null; status.textContent = '视频加载失败，正在重试；也可能是当前浏览器不支持视频编码。'; } });
-document.querySelector('#enter').onclick = () => { started = true; video.play().catch(() => {}); sync(); };
-const player = document.querySelector('#player');
-const fullscreen = document.querySelector('#fullscreen');
-let hideControls;
+video.addEventListener('playing', () => {
+  playbackIssue = '';
+  entry.hidden = true;
+  setStatus('正在直播 · 已同步频道时间');
+  revealControls();
+});
+video.addEventListener('waiting', () => {
+  if (authenticated && started) setStatus('正在缓冲…', true);
+});
+video.addEventListener('pause', revealControls);
+video.addEventListener('error', () => {
+  if (authenticated) {
+    current = null;
+    offerEntry('视频加载失败，正在重试；也可能是当前浏览器不支持视频编码。');
+  }
+});
+
+enter.onclick = () => {
+  playbackIssue = '';
+  started = true;
+  setStatus('正在进入频道…', true);
+  // Preserve the user gesture for an already loaded source.
+  if (video.currentSrc && !video.error) playChannel();
+  sync();
+};
 function revealControls() {
   clearTimeout(hideControls);
   player.classList.remove('controls-hidden');
-  if (document.fullscreenElement === player) {
+  if (entry.hidden && !video.paused && video.readyState >= 3 && !needsAttention) {
     hideControls = setTimeout(() => {
-      // Do not hide a button while a keyboard user is interacting with it.
-      if (player.querySelector('.bar :focus-visible')) return;
+      if (player.querySelector('button:focus-visible')) return;
       player.classList.add('controls-hidden');
     }, 2500);
   }
@@ -97,18 +146,32 @@ function revealControls() {
 });
 fullscreen.onclick = async () => {
   try {
-    if (document.fullscreenElement) await document.exitFullscreen();
-    else if (player.requestFullscreen) await player.requestFullscreen();
-    else { status.textContent = '当前浏览器不支持此页面的全屏模式。'; }
-  } catch { status.textContent = '无法进入全屏，请检查浏览器权限。'; }
+    if (document.fullscreenElement === player) await document.exitFullscreen();
+    else if (player.requestFullscreen) {
+      await player.requestFullscreen();
+      // Rotation support is independent of fullscreen support.
+      if (document.fullscreenElement === player && screen.orientation?.lock) {
+        try { await screen.orientation.lock('landscape'); } catch { /* Keep fullscreen if rotation is unavailable. */ }
+        if (document.fullscreenElement !== player) releaseOrientation();
+      }
+    } else { setStatus('当前浏览器不支持此页面的全屏模式。', true); }
+  } catch { setStatus('无法进入全屏，请检查浏览器权限。', true); }
 };
+function releaseOrientation() {
+  try { screen.orientation?.unlock?.(); } catch { /* Orientation locking is optional. */ }
+}
 document.addEventListener('fullscreenchange', () => {
-  fullscreen.textContent = document.fullscreenElement ? '退出全屏' : '全屏';
+  const active = document.fullscreenElement === player;
+  fullscreen.setAttribute('aria-label', active ? '退出全屏' : '全屏');
+  fullscreen.title = active ? '退出全屏' : '全屏';
+  fullscreen.setAttribute('aria-pressed', String(active));
+  if (!active) releaseOrientation();
   revealControls();
 });
+
 document.addEventListener('visibilitychange', () => { if (!document.hidden) sync(); });
 setInterval(sync, 15000);
 setAuthenticated(false);
 requireUser()
   .then(user => { if (user) { setAuthenticated(true); sync(); } })
-  .catch(() => { status.textContent = '无法连接登录服务，请稍后刷新。'; });
+  .catch(() => { setStatus('无法连接登录服务，请稍后刷新。', true); });
